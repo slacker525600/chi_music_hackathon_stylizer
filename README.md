@@ -27,3 +27,8 @@ things to do going forward ...
     sort of working towards that, but not there
   save feature after processing one song, dont do it again. 
   check if timbre methodology actually makes sense... 
+
+currently investigating loris, as it appears to have the closet starting point to what I am looking for. should be interesting
+ need to investigate differences between representations, how to use the the libs interchangably or to switch over what I have..
+ we shall see. 
+
