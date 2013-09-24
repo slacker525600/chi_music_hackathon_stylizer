@@ -48,7 +48,8 @@ def try_something(sInputFileName):
 
 if __name__ == "__main__":
   asFiles = os.listdir('music/')
-  clusters = []
+  clusters = [] #should probably move the cluster info to a separate folder ... list that folder just add another var and move things. 
+  #need to get song modifications working before worrying about how to organize the cluster information.
   for sFile in asFiles:
     if '.clstr' in sFile:
       continue
