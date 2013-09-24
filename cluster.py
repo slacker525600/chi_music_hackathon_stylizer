@@ -12,6 +12,7 @@ config.ECHO_NEST_API_KEY="V2SK2YI479RJEKRGG"
 def get_clusters(aanTimbres):
   #linkage was example ... output didnt make sense to me. 
   #return linkage(aanTimbres, method='complete')
+  #was thinking, each instrument by each note maybe, but whatever
   return fclusterdata(aanTimbres, 50, criterion='maxclust') 
 
 def try_something(sInputFileName):
@@ -37,18 +38,16 @@ def try_something(sInputFileName):
       dnMeans[nIn] = [anTimbres[nSound], 1]
   anVectors = []
   for key, val in dnMeans.items():
-    #print(val[0])
-    #a lot of these clusters are unique sounds. 
+    #a lot of these clusters are unique sounds. if it only shows up once, ignore it, not a defining characteristic
+    if (val[1] == 1):
+      continue
     for nTimbre in val[0]: #normalizing back the additions above
       val[0][val[0].index(nTimbre)] /= val[1] #same wrong addendum above matches here. 
-    #print(val[0])
-    #print('cluster:' +str(key) + ' ' + str(val[0]))
-    if (val[1] > 1):
-      anVectors.append(val[0])
+    anVectors.append(val[0])
   return anVectors
 
 if __name__ == "__main__":
-  asFiles = os.listdir('../music/')
+  asFiles = os.listdir('music/')
   clusters = []
   for sFile in asFiles:
     if '.clstr' in sFile:

@@ -9,40 +9,44 @@ import cPickle
 from echonest.remix import modify
 from pyechonest import config
 config.ECHO_NEST_API_KEY="V2SK2YI479RJEKRGG"
+#config var failure. should use system variable, but it util drops it after uploading a track
+#en-ffmpeg needs to be upgraded or something, wav works fine, mp3 encoding fails. may need to modify command line from lib
 
-def reverse():
-    sInputFileName = '../music/Lorde_royals.mp3'
-    sOutputFileName = '../music/new.wav'
+class my_mod_class(modify.Modify):
+  nothing = 'nothing'
+  def modify_timbre(self):
+    print(self.nothing)
+
+def reverse(sInputFileName):
+    sOutputFileName = 'music/reversed.' + sInputFileName[:-3] + '.wav'
     audioFile = audio.LocalAudioFile(sInputFileName)
-    sToReverse = 'segments' # ... dont know what this does, want to test it ... 
+    sToReverse = 'segments'
     if sToReverse == 'beats' :
         chunks = audioFile.analysis.beats
     elif sToReverse == 'segments' :
         chunks = audioFile.analysis.segments
-    else :
-        print usage
-        return
     chunks.reverse()
     reversedAudio = audio.getpieces(audioFile, chunks)
     reversedAudio.encode(sOutputFileName)
 
 def do_something(sFileToConvert, nTempoToHit, nPitchOffset, nLoudness, sGenre):#dJoined):
-  fFile = open('../music/' + sGenre, 'r')
+  #audiofile.save() #apparently can cache analysis. 
+  fFile = open('music/' + sGenre, 'r')
   aTimbres = cPickle.load(fFile)
   fFile.close()
-  print('using timbres:' + str(aTimbres))
-  #sGenre needs to match one of the .clstr files in music. 
-  mod = modify.Modify()
+  #print('using timbres:' + str(aTimbres))
+
+  mod = my_mod_class()
   track = audio.LocalAudioFile(sFileToConvert, verbose='verbose')
-  #... trying to read waltzify, but its not awesome, not unclear persay, but too complicated of an example to work from. 
+  #need to set the track's shape to match the two channel sound?
   beats = track.analysis.beats
-  out_shape = (len(track.data),)
-  anNewBeats = audio.AudioData(shape=out_shape, numChannels=1, sampleRate=44100)
+  out_shape = (len(track.data),2)
+  anNewBeats = audio.AudioData(shape=out_shape, numChannels=2, sampleRate=44100)
   #print(track.analysis.key)
-  nPitchOffset = nPitchOffset -track.analysis.key['value']
   for i, beat in enumerate(beats):
     #data = track[beat].data
-    anNewBeats.append(mod.shiftPitchSemiTones(track[beat], int(nPitchOffset *1.5))) #convert from key to pitch
+    anNewBeats.append( mod.shiftPitchSemiTones( track[beat], int( nPitchOffset *1.5) ) )
+    #convert from key to pitch
 
   track.data = anNewBeats
   segments = track.analysis.segments
@@ -58,8 +62,9 @@ def do_something(sFileToConvert, nTempoToHit, nPitchOffset, nLoudness, sGenre):#
     segment.timbre = aTimbres[anTimbreDistances.index(min(anTimbreDistances))]
     chunks.append(segment)
   print(track.analysis.tempo['value'])
-    
+  
   modAudio = audio.getpieces(track.data, chunks)
+  audio.fadeEdges(modAudio.data)
   #modAudio = audio.fadeEdges(modAudio.data)
   modAudio.encode('niceout.wav')
 
@@ -77,9 +82,6 @@ def chipmunk(sFile):
 
 #could put if main if statement here, 
 if (__name__ == '__main__') :
-  #do_something('../music/gam.mp3', 150, 5, 5,'ebm.mp3.clstr')
-  chipmunk('../music/gam.mp3')
+  chipmunk('music/gam.mp3')
 
 
-class my_mod_class(modify.Modify):
-  nothing = 'nothing'

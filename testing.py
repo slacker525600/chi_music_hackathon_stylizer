@@ -77,40 +77,35 @@ def lookup_seeds(seed_artist_names):
     return seed_ids
 
 class Proxy(CGIHTTPServer.CGIHTTPRequestHandler):
+  def get_vars(self, asFields):
+      anLocs = []
+      for sField in asFields:
+        anLocs.append(self.path.find(sField))
+      anLocs.append(len(self.path) + 1)
+      dsVars = {}
+      for i, nLoc in enumerate(anLocs[:-1]):
+        #                                plus one for =         +1 for next field loc #-1 for next field starting loc vs end
+        dsVars[asFields[i]] = self.path[ nLoc + len(asFields[i]) + 1 : anLocs[i+1] - 1 ]
+      return dsVars
+
   def do_GET(self):
-    #self.wfile.write("pre reading")
-    #sStream = self.rfile.read()
-    #self.wfile.write("done reading")
-    #for sIn in asInput:
-    #  self.wfile.write(str(sIn))
     if "static" in self.path or "music" in self.path:
-      fFileToServe = open('..' + self.path ,'r')
-      self.copyfile(fFileToServe, self.wfile) #urllib2.urlopen("http://.." +self.path), self.wfile)
+      fFileToServe = open(self.path[1:] ,'r') #urllib removed front / urllib 2 gives it thus starting at 1
+      self.copyfile(fFileToServe, self.wfile)
       fFileToServe.close()
     elif "set_fields" in self.path:
       #this section assumes the fields are all given, no query. 
       #need mp3 tempo, key change, timbres to use, 
-      sSongFieldName = "?song="
-      sTempoFieldName = "&tempo="
-      sKeyFieldName = "&key="
-      sTimbreFieldName = "&timbres="
-
-      nSongLoc = self.path.find(sSongFieldName)
-      nTempoLoc = self.path.find(sTempoFieldName)
-      nKeyLoc = self.path.find(sKeyFieldName)
-      nTimbreLoc = self.path.find(sTimbreFieldName)
-
-      sSong = self.path[nSongLoc+len(sSongFieldName):nTempoLoc]
-      sTempo = self.path[nTempoLoc+len(sTempoFieldName):nKeyLoc]
-      sKey = self.path[nKeyLoc + len(sKeyFieldName):nTimbreLoc]
-      sTimbre = self.path[nTimbreLoc + len(sTimbreFieldName):]
+      asFields = ["song", "tempo", "key", "timbres"]
+      dsVars = self.get_vars(asFields)
       
-      my_modify.do_something('../music/' + sSong, int(sTempo), int(sKey), 0, sTimbre)
-      
-      sTimestampedFileName = '../music/' + sSong+ '_to_' + sTimbre+ datetime.datetime.now().strftime('%d.%h%M%S') + '.wav'
+      sTimestampedFileName = 'music/' + dsVars['song']+ '_to_' + dsVars['timbres'] + datetime.datetime.now().strftime('%d.%h%M%S') + '.wav'
+      #writes file called niceout.wav
+      my_modify.do_something('music/' + dsVars['song'], int(dsVars['tempo']), int(dsVars['key']), 0, dsVars['timbres'])
       shutil.move('niceout.wav', sTimestampedFileName) #just note to self, niceout.wav will be file, want to move it to a timestamped fil
+
       self.wfile.write(header()) 
-      self.wfile.write('original<audio controls><source src="../music/' +sSong + '" type="audio/wav"></audio>')
+      self.wfile.write('original<audio controls><source src="music/' +dsVars['song'] + '" type="audio/wav"></audio>')
       self.wfile.write('<br>new<audio controls><source src="' + sTimestampedFileName + '" type="audio/wav"></audio>')
       self.wfile.write(footer()) 
     else:
